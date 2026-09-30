@@ -1,0 +1,12 @@
+[workspace]
+authors = ["duongvu2005 <duongvu.nh05@gmail.com>"]
+channels = ["conda-forge"]
+name = "hpc-in-julia"
+platforms = ["win-64", "osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+repl = "julia --project=. --threads=auto"
+setup = "julia --project=. -e 'using Pkg; Pkg.instantiate()'"
+
+[dependencies]

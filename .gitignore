@@ -1,0 +1,23 @@
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+.CondaPkg/
+deps/build.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated output (plots, profiles, benchmark dumps)
+output/
+*.svg
+*.png
+*.pdf
+*.prof
