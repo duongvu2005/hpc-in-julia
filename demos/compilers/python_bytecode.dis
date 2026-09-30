@@ -1,0 +1,27 @@
+  3           RESUME                   0
+
+  4           LOAD_SMALL_INT           0
+              STORE_FAST               1 (a)
+
+  5           LOAD_SMALL_INT           1
+              STORE_FAST               2 (b)
+
+  6   L1:     LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           0
+              COMPARE_OP             148 (bool(>))
+              POP_JUMP_IF_FALSE       21 (to L2)
+              NOT_TAKEN
+
+  7           LOAD_FAST_LOAD_FAST     33 (b, a)
+              LOAD_FAST_BORROW         2 (b)
+              BINARY_OP                0 (+)
+              STORE_FAST_STORE_FAST   33 (b, a)
+
+  8           LOAD_FAST_BORROW         0 (n)
+              LOAD_SMALL_INT           1
+              BINARY_OP               23 (-=)
+              STORE_FAST               0 (n)
+              JUMP_BACKWARD           27 (to L1)
+
+ 10   L2:     LOAD_FAST_BORROW         1 (a)
+              RETURN_VALUE
