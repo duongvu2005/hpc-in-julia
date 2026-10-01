@@ -4,8 +4,16 @@ function test_benchmark()
     a = rand(100)
     b = rand(100)
     c = similar(a)
-    display(@benchmark vector_add($a, $b))
-    display(@benchmark vector_add!($c, $a, $b))
+
+    b_with_alloc = @benchmark vector_add($a, $b)
+    b_without_alloc = @benchmark vector_add!($c, $a, $b)
+    display(b_with_alloc)
+    display(b_without_alloc)
+
+    open("demos/benchmarking/benchmarking_example_results.txt", "w") do io
+        show(io, MIME("text/plain"), b_with_alloc)
+        show(io, MIME("text/plain"), b_without_alloc)
+    end
 end
 
 # with alloc
