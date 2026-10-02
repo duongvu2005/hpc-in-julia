@@ -4,6 +4,7 @@ include("initial_conditions.jl")
 function acceleration(pos, mass)
     N = length(mass)
 
+    # calc distance
     x = pos[:, 1]
     y = pos[:, 2]
     z = pos[:, 3]
@@ -14,7 +15,9 @@ function acceleration(pos, mass)
 
     r = sqrt.(dx.^2 .+ dy.^2 .+ dz.^2 .+ SOFTENING^2)
 
+    # calc force & acceleration
     F = G .* (mass' .* mass) ./ r.^2
+
     for i in 1:N
         F[i, i] = 0
     end
@@ -50,7 +53,7 @@ function update!(state::State, dt)
     state.vel += (dt/6) * (k1v + 2*k2v + 2*k3v + k4v)
 end
 
-"""Kinetic + potential energy."""
+"""Calculate the total energy."""
 function total_energy(state::State)
     kinetic = 0.5 * sum(state.mass .* (sum(abs2, state.vel, dims=2)))
 
@@ -71,7 +74,7 @@ function total_energy(state::State)
         V[i, i] = 0
     end
 
-    potential = sum(V) / 2
-    
+    potential = 0.5 * sum(V)
+
     return kinetic + potential
 end

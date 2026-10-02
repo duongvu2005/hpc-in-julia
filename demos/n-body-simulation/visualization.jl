@@ -15,7 +15,7 @@ function build_scene(state; limit = 550, z_limit = 100)
 
     fig = Figure(size = (1920, 1080), backgroundcolor = :black, figure_padding = 0)
     ax = Axis3(fig[1, 1]; aspect = :data, protrusions = 0, perspectiveness = 0.2,
-               elevation = deg2rad(30), azimuth = 0.6,
+               elevation = π/6, azimuth = 0.6,
                limits = (-limit, limit, -limit, limit, -z_limit, z_limit))
     hidedecorations!(ax)
     hidespines!(ax)
@@ -50,7 +50,7 @@ function visualize(; n = 400, sim_speed = 10.0, steps_per_frame = 10)
         points[] = body_points(state)
         speeds[] = body_speeds(state)
         center[] = central_point(state)
-        yield()                     # let GLMakie's render task run; sleep() rounds up to ~15 ms on Windows
+        yield()
 
         frame_fps = 1 / max(frame_time, 1e-6)
         fps = fps == 0.0 ? frame_fps : 0.95 * fps + 0.05 * frame_fps

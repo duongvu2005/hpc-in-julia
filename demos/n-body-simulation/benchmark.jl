@@ -2,7 +2,7 @@ using BenchmarkTools
 using Random
 using Printf
 
-# Each backend gets its own module, since both define acceleration / update! / State.
+# Needs to separate the modules since they contain the same function names
 module Naive
 include("physics-naive.jl")
 end
@@ -12,57 +12,43 @@ include("physics.jl")
 end
 
 const dt = 0.01
-const BACKENDS = (("naive", Naive), ("physics", Optimized))
+const IMPLEMENTATIONS = (("naive", Naive), ("optimized", Optimized))
 
-# Same seed, so every backend starts from the same initial state
-function make_state(backend, n)
+function make_state(implementation, n)
     Random.seed!(0)
-    return backend.rotating_disk(n)
+    return implementation.rotating_disk(n)
 end
 
-function benchmark_update(backend, n)
-    state = make_state(backend, n)
-    return @benchmark $backend.update!($state, $dt)
+function benchmark_update(implementation, n)
+    state = make_state(implementation, n)
+    return @benchmark $implementation.update!($state, $dt)
 end
 
-function energy_drift(backend, n; steps = 1000)
-    state = make_state(backend, n)
-    e0 = backend.total_energy(state)
+function energy_drift(implementation, n; steps = 1000)
+    state = make_state(implementation, n)
+    e0 = implementation.total_energy(state)
     for _ in 1:steps
-        backend.update!(state, dt)
+        implementation.update!(state, dt)
     end
-    return abs((backend.total_energy(state) - e0) / e0)
-end
-
-# Largest position difference from the naive backend after `steps` steps.
-# An optimization should keep this at roundoff level.
-function max_deviation(backend, n; steps = 100)
-    reference = make_state(Naive, n)
-    state = make_state(backend, n)
-    for _ in 1:steps
-        Naive.update!(reference, dt)
-        backend.update!(state, dt)
-    end
-    return maximum(abs.(state.pos .- reference.pos))
+    return abs((implementation.total_energy(state) - e0) / e0)
 end
 
 function main()
     println("--- correctness (n = 100) ---")
-    @printf("%-10s %-20s %-20s\n", "backend", "energy drift", "max |pos - naive|")
-    for (name, backend) in BACKENDS
-        @printf("%-10s %-20.3e %-20.3e\n", name, energy_drift(backend, 100),
-                max_deviation(backend, 100))
+    @printf("%-20s %-20s\n", "implementation", "energy drift")
+    for (name, implementation) in IMPLEMENTATIONS
+        @printf("%-20s %-20.3e\n", name, energy_drift(implementation, 100))
     end
 
     println("\n--- update! (median) ---")
-    @printf("%-6s %-10s %-12s %-12s %-12s %-8s\n", "n", "backend", "time", "memory", "allocs", "speedup")
+    @printf("%-6s %-20s %-12s %-12s %-12s %-8s\n", "n", "implementation", "time", "memory", "allocs", "speedup")
     for n in (50, 100, 200, 400)
         base = nothing
-        for (name, backend) in BACKENDS
-            trial = benchmark_update(backend, n)
+        for (name, implementation) in IMPLEMENTATIONS
+            trial = benchmark_update(implementation, n)
             t = median(trial).time
             base === nothing && (base = t)
-            @printf("%-6d %-10s %-12s %-12s %-12d %-8.2f\n", n, name,
+            @printf("%-6d %-20s %-12s %-12s %-12d %-8.2f\n", n, name,
                     BenchmarkTools.prettytime(t), BenchmarkTools.prettymemory(trial.memory),
                     trial.allocs, base / t)
         end
