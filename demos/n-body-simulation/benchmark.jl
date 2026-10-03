@@ -39,7 +39,7 @@ function energy_drift(implementation, n; steps = 1000)
 end
 
 function main()
-    n = 400
+    n = 1000
     @printf("--- correctness (n = %d) ---\n", n)
     @printf("%-20s %-20s\n", "implementation", "energy drift")
     for (name, implementation) in IMPLEMENTATIONS

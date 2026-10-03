@@ -16,7 +16,7 @@ end
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
 function acceleration!(kv_cache, pos, mass, dim::Val{D}) where {D}
     N = length(mass)
-    @inbounds for i in 1:N
+    @inbounds Threads.@threads for i in 1:N
         a_i = body_acceleration(pos, mass, i, dim)
         for k in 1:D
             kv_cache[i, k] = a_i[k]

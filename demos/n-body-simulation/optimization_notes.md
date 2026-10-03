@@ -198,3 +198,50 @@ acceleration!(cache.k1v, state.pos, state.mass, dim)
 ```
 
 ### Multi-threading
+
+For clarity, we first factor the inner `j` loop into a function that calculate the acceleration of each
+particle `i`. That is,
+
+```julia
+@inline function body_acceleration(pos, mass, i, ::Val{D}) where {D}
+    x_i = SVector{D}(pos[i, k] for k in 1:D)
+    a_i = SVector{D}(0.0 for _ in 1:D)
+    @inbounds @simd for j in eachindex(mass)
+        x_j = SVector{D}(pos[j, k] for k in 1:D)
+        x_ij = x_i - x_j
+        inv_r_ij = 1 / sqrt(sum(abs2, x_ij) + ϵ2)
+        a_i += -inv_r_ij^3 * mass[j] .* x_ij
+    end
+    return G * a_i
+end
+```
+
+Then, notice that even though we're writing to the same `kv_cache`, the acceleration of different particles
+belong to different row, so we can simply add a Threads.@threads to the `i` loop without having to worry
+about race conditions.
+
+```julia
+"""Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
+function acceleration!(kv_cache, pos, mass, dim::Val{D}) where {D}
+    N = length(mass)
+    @inbounds Threads.@threads for i in 1:N
+        a_i = body_acceleration(pos, mass, i, dim)
+        for k in 1:D
+            kv_cache[i, k] = a_i[k]
+        end
+    end
+    return kv_cache
+end
+```
+
+Doing so, we get a speed up of 0.111ms (from 0.215ms to 0.104ms, or 51.6% improvement). This is quite low consider the
+fact that our 9900x have 24 cores (but only getting an x2 speedup). However, remember that the speedup in general using
+`n`' core is given by
+
+$$
+S(n) = \frac{1}{(1 - p) + p/n}
+$$
+
+where $p$ is the portion of work that can be parallelable. Thus, as we increase the number of particles, the speedup
+is going to be much more significant. Indeed, when we increase the number of particles from 400 to 1000, the median
+time only double (0.104ms -> 0.205ms), despite the quadratic nature of the simulation. In the simulation with 1000 particles, we now get over 360fps.
