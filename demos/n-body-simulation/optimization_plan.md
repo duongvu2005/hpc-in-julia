@@ -113,3 +113,10 @@ or 23.3%).
 We declare the dimension D using a value type so the compiler have access to the number of dimension at
 compile time and can use this information to optimize our code (also, we won't have to hard-code the
 number of dimension into our code, which is nice).
+
+Doing so, we got a 0.145ms improvement (from 1.080ms to 0.935ms, or 13.5% improvement).
+
+## Vectorization
+
+As a baseline, adding `@simd` in our `j` loop gives us a 0.09ms improvement (from 0.935ms to 0.845ms,
+or 9.5% improvement).

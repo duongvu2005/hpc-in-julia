@@ -2,15 +2,15 @@ include("initial_conditions.jl")
 using StaticArrays
 
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
-function acceleration!(tmp_acc, pos, mass)
-    D, N = size(pos)
+function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
+    N = length(mass)
     tmp_acc .= 0
     @inbounds for i in 1:N
-        x_i = @SVector [pos[k, i] for k in 1:3]
-        a_i = @SVector [0.0, 0.0, 0.0]
+        x_i = SVector{D}(pos[k, i] for k in 1:D)
+        a_i = SVector{D}(0.0 for _ in 1:D)
         m_i = mass[i]
-        for j in i+1:N
-            x_j = @SVector [pos[k, j] for k in 1:3]
+        @simd for j in i+1:N
+            x_j = SVector{D}(pos[k, j] for k in 1:D)
 
             x_ij = x_i - x_j
             r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
@@ -36,21 +36,22 @@ end
 """Advance the state by one RK4 step of size dt."""
 function update!(state::State, dt)
     cache = state.cache
+    dim = Val(D)
     # RK4
     cache.k1x .= state.vel
-    cache.k1v .= acceleration!(cache.tmp_acc, state.pos, state.mass)
+    cache.k1v .= acceleration!(cache.tmp_acc, state.pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k1x
     cache.k2x .= state.vel .+ 0.5 .* dt .* cache.k1v
-    cache.k2v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass)
+    cache.k2v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k2x
     cache.k3x .= state.vel .+ 0.5 .* dt .* cache.k2v
-    cache.k3v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass)
+    cache.k3v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ dt .* cache.k3x
     cache.k4x .= state.vel .+ dt .* cache.k3v
-    cache.k4v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass)
+    cache.k4v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass, dim)
 
     state.pos .+= (dt/6) .* (cache.k1x .+ 2 .* cache.k2x .+ 2 .* cache.k3x .+ cache.k4x)
     state.vel .+= (dt/6) .* (cache.k1v .+ 2 .* cache.k2v .+ 2 .* cache.k3v .+ cache.k4v)

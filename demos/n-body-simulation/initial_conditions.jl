@@ -1,6 +1,7 @@
 # Initial conditions for N-body simulation
 const G = 1.0
 const SOFTENING = 1e-1
+const D = 3
 
 struct RK4Cache
     k1x::Matrix{Float64}; k1v::Matrix{Float64}
@@ -12,8 +13,8 @@ struct RK4Cache
 end
 
 mutable struct State
-    pos::Matrix{Float64}    # 3 x N
-    vel::Matrix{Float64}    # 3 x N
+    pos::Matrix{Float64}    # D x N
+    vel::Matrix{Float64}    # D x N
     mass::Vector{Float64}   # N
     cache::RK4Cache
 end
@@ -43,12 +44,12 @@ function rotating_disk(n; central_mass = 10000.0, inner_radius = 50.0, outer_rad
     end
 
     cache = RK4Cache(
-        zeros(3, n), zeros(3, n),
-        zeros(3, n), zeros(3, n),
-        zeros(3, n), zeros(3, n),
-        zeros(3, n), zeros(3, n),
-        zeros(3, n),
-        zeros(3, n)
+        zeros(D, n), zeros(D, n),
+        zeros(D, n), zeros(D, n),
+        zeros(D, n), zeros(D, n),
+        zeros(D, n), zeros(D, n),
+        zeros(D, n),
+        zeros(D, n)
     )
 
     return State(pos, vel, mass, cache)
