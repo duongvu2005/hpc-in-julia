@@ -156,3 +156,24 @@ end
 
 In fact, after doing this, we gain a massive boost in performance. The median time dropped by a massive
 0.333ms (from 0.845ms to 0.512ms, or 39.4%) improvement.
+
+We will also swap back to the `NxD` instead of the `DxN` we proposed above. Using `DxN` as above optmizes
+individual calculations such as
+
+```julia
+x_i = SVector{D}(pos[k, i] for k in 1:D)
+```
+
+and
+
+```julia
+x_j = SVector{D}(pos[k, j] for k in 1:D)
+```
+
+since the `(x, y, z)` coords of any particles will be a contignuous `D` block in memory (here, `D = 3`).
+However, when we use `@simd`, we want to optimize loading a chunk of coords of particles onto the registers
+for AVX-512. If we use `Float64`, each register can hold 1 component for 8 bodies. Thus, we want the component
+of the 8 bodies to be in contiguous blocks. Doing so won't affect the performance for the symmetric case anyways.
+
+Doing so, the performance improved for another 0.297ms (from 0.512ms to 0.215ms, or 58% improvement). With this,
+we can comfortably run a simulation with `N=1000` at 75fps now.

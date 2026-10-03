@@ -6,11 +6,11 @@ function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
     N = length(mass)
     tmp_acc .= 0
     @inbounds for i in 1:N
-        x_i = SVector{D}(pos[k, i] for k in 1:D)
+        x_i = SVector{D}(pos[i, k] for k in 1:D)
         a_i = SVector{D}(0.0 for _ in 1:D)
         m_i = mass[i]
-        @simd for j in i+1:N
-            x_j = SVector{D}(pos[k, j] for k in 1:D)
+        for j in i+1:N
+            x_j = SVector{D}(pos[j, k] for k in 1:D)
 
             x_ij = x_i - x_j
             r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
@@ -22,12 +22,12 @@ function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
             a_i += a_ij
             for k in 1:D
             # tmp_acc will store the acc of j due to all particles w/ index < j
-                tmp_acc[k, j] += a_ji[k]
+                tmp_acc[j, k] += a_ji[k]
             end
         end
         for k in 1:D
             # adding the contribution from particles w/ index > i
-            tmp_acc[k, i] += a_i[k]
+            tmp_acc[i, k] += a_i[k]
         end
     end
     return tmp_acc
@@ -59,13 +59,13 @@ end
 
 """Calculate the total energy."""
 function total_energy(state::State)
-    kinetic = 0.5 * sum(state.mass .* (vec(sum(abs2, state.vel, dims=1))))
+    kinetic = 0.5 * sum(state.mass .* (sum(abs2, state.vel, dims=2)))
 
     N = length(state.mass)
     
-    x = state.pos[1, :]
-    y = state.pos[2, :]
-    z = state.pos[3, :]
+    x = state.pos[:, 1]
+    y = state.pos[:, 2]
+    z = state.pos[:, 3]
 
     dx = x' .- x
     dy = y' .- y
@@ -78,7 +78,7 @@ function total_energy(state::State)
         V[i, i] = 0
     end
 
-    potential = 0.5 * sum(V)
-
+    potential = sum(V) / 2
+    
     return kinetic + potential
 end
