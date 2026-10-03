@@ -21,8 +21,8 @@ function build_scene(state; limit = 550, z_limit = 100)
     hidespines!(ax)
 
     scatter!(ax, points; color = speeds, colormap = :plasma,
-             colorrange = (0, maximum(speeds[])), markersize = 16)
-    scatter!(ax, center; color = :yellow, markersize = 48)
+             colorrange = (0, maximum(speeds[])), markersize = 6)
+    scatter!(ax, center; color = :yellow, markersize = 60)
 
     stats = Observable("")
     Label(fig[1, 1], stats; tellwidth = false, tellheight = false,
@@ -36,7 +36,7 @@ function visualize(; n = 400, sim_speed = 10.0, steps_per_frame = 10)
     fig, points, speeds, center, stats = build_scene(state)
     screen = display(fig; framerate = 60.0) 
 
-    fps = 0.0                       # smoothed (exponential moving average)
+    fps = 0.0  # smoothed (exponential moving average)
     last = time_ns()
     while isopen(screen)
         now = time_ns()

@@ -35,16 +35,17 @@ function energy_drift(implementation, n; steps = 1000)
 end
 
 function main()
-    println("--- correctness (n = 100) ---")
+    n = 400
+    @printf("--- correctness (n = %d) ---\n", n)
     @printf("%-20s %-20s\n", "implementation", "energy drift")
     for (name, implementation) in IMPLEMENTATIONS
-        @printf("%-20s %-20.3e\n", name, energy_drift(implementation, 100))
+        @printf("%-20s %-20.3e\n", name, energy_drift(implementation, n))
     end
 
-    println("\n--- update! (n = 100) ---")
-    b_naive = benchmark_update(Naive, 100)
-    b_optimized = benchmark_update(Optimized, 100)
+    @printf("\n--- update! (n = %d) ---\n", n)
+    b_naive = benchmark_update(Naive, n)
     display(b_naive)
+    b_optimized = benchmark_update(Optimized, n)
     display(b_optimized)
 end
 
