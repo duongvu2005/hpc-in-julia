@@ -59,26 +59,21 @@ end
 
 """Calculate the total energy."""
 function total_energy(state::State)
-    kinetic = 0.5 * sum(state.mass .* (sum(abs2, state.vel, dims=2)))
-
     N = length(state.mass)
-    
-    x = state.pos[:, 1]
-    y = state.pos[:, 2]
-    z = state.pos[:, 3]
+    ϵ2 = SOFTENING^2
 
-    dx = x' .- x
-    dy = y' .- y
-    dz = z' .- z
+    kinetic = 0.0
+    potential = 0.0
+    @inbounds for i in 1:N
+        m_i = state.mass[i]
+        v_i = SVector{D}(state.vel[i, k] for k in 1:D)
+        kinetic += m_i * sum(abs2, v_i)
 
-    r = sqrt.(dx.^2 .+ dy.^2 .+ dz.^2 .+ SOFTENING^2)
-    V = - G * (state.mass' .* state.mass) ./ r
-
-    for i in 1:N
-        V[i, i] = 0
+        x_i = SVector{D}(state.pos[i, k] for k in 1:D)
+        @simd for j in i+1:N
+            x_j = SVector{D}(state.pos[j, k] for k in 1:D)
+            potential -= m_i * state.mass[j] / sqrt(sum(abs2, x_i - x_j) + ϵ2)
+        end
     end
-
-    potential = sum(V) / 2
-    
-    return kinetic + potential
+    return kinetic / 2 + G * potential
 end
