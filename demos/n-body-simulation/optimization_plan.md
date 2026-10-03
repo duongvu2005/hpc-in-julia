@@ -78,9 +78,19 @@ At this point, we have successfully removed all heap allocations.
 Julia is column major, so maybe changing the matrices to be 3xN instead of Nx3 will speed
 up the code a little bit (see [row major vs column major](../cpu-architecture/matrix_sum_results.txt))
 
+Well... I did it and got a 0.008ms (from 1.504ms to 1.496ms, or 0.53%) speed up... I hope it's worth
+it for the `N = 10_000` simulation lmfao (and that it's not just pure noise).
+
+## Reading from memory
+
+Recall that reading from memory is one of the expensive operations (see the
+[cpu operation cost chart](../cpu-architecture/cpu_operations_cost.png)).
+Thus, we will read and write to the `tmp_acc` as infrequent as possible by moving it out of the `j` loop.
+To do so, we need to create a static array to store the acceleration. Doing this actually improved the
+performance for like 0.087ms (from 1.496ms to 1.409ms, or 5.8%).
+
 ## Redundant computations
 
-A few things to note
+### Inbound checks
 
-- First, we don't need to run the full NxN calculation (Newton's 3rd law)
--
+We don't need to check that our indices are in bound here, so we can add `@inbounds` to our loop.

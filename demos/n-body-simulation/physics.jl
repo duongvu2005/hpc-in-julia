@@ -4,9 +4,9 @@ using StaticArrays
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
 function acceleration!(tmp_acc, pos, mass)
     D, N = size(pos)
-    tmp_acc .= 0.0
     for i in 1:N
         x_i = @SVector [pos[k, i] for k in 1:3]
+        a_i = @SVector [0.0, 0.0, 0.0]
         for j in 1:N
             if i == j
                 continue
@@ -17,9 +17,10 @@ function acceleration!(tmp_acc, pos, mass)
             r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
 
             a_ij = (-G * mass[j] / r_ij^3) .* x_ij
-            for k in 1:D
-                tmp_acc[k, i] += a_ij[k]
-            end
+            a_i = a_i .+ a_ij
+        end
+        for k in 1:D
+            tmp_acc[k, i] = a_i[k]
         end
     end
     return tmp_acc
