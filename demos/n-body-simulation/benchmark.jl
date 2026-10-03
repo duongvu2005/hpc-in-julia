@@ -4,7 +4,11 @@ using Printf
 
 # Needs to separate the modules since they contain the same function names
 module Naive
-include("physics-naive.jl")
+include("physics_naive.jl")
+end
+
+module Symmetric
+include("physics_symmetric.jl")
 end
 
 module Optimized
@@ -12,7 +16,7 @@ include("physics.jl")
 end
 
 const dt = 0.01
-const IMPLEMENTATIONS = (("naive", Naive), ("optimized", Optimized))
+const IMPLEMENTATIONS = (("naive", Naive), ("symmetric", Symmetric), ("optimized", Optimized))
 
 function make_state(implementation, n)
     Random.seed!(0)
@@ -43,10 +47,11 @@ function main()
     end
 
     @printf("\n--- update! (n = %d) ---\n", n)
-    b_naive = benchmark_update(Naive, n)
-    display(b_naive)
-    b_optimized = benchmark_update(Optimized, n)
-    display(b_optimized)
+    for (name, implementation) in IMPLEMENTATIONS
+        println("\n", name, "\n")
+        b = benchmark_update(implementation, n)
+        display(b)
+    end
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

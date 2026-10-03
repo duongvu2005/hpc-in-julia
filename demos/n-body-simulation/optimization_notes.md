@@ -116,8 +116,43 @@ number of dimension into our code, which is nice).
 
 Doing so, we got a 0.145ms improvement (from 1.080ms to 0.935ms, or 13.5% improvement).
 
-## Vectorization
+## simd
 
 As a baseline, adding `@simd` in our `j` loop gives us a 0.09ms improvement (from 0.935ms to 0.845ms,
 or 9.5% improvement). With `@turbo` the time was 0.884ms which is worse than `@simd` for whatever
 reason so I don't think it's worth messing our code over that.
+
+Actually, this is evidence that while using Newton's 3rd law saves us some computation, the simulation
+itself will scale badly because the loops now are not independent of each other. To make this scale
+even better, we will bring back the full `1:N` `i` and `j` loops.
+
+## Vectorization and Multithreading
+
+Motivated by the section above, we reinstate the `1:N` loop for both. The acceleration function is now
+
+```julia
+"""Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
+function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
+    N = length(mass)
+    ϵ2 = SOFTENING^2
+    @inbounds for i in 1:N
+        x_i = SVector{D}(pos[k, i] for k in 1:D)
+        a_i = SVector{D}(0.0 for _ in 1:D)
+        @simd for j in 1:N
+            x_j = SVector{D}(pos[k, j] for k in 1:D)
+
+            x_ij = x_i - x_j
+            r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
+
+            a_i += -G / r_ij^3 * mass[j] .* x_ij
+        end
+        for k in 1:D
+            tmp_acc[k, i] = a_i[k]
+        end
+    end
+    return tmp_acc
+end
+```
+
+In fact, after doing this, we gain a massive boost in performance. The median time dropped by a massive
+0.333ms (from 0.845ms to 0.512ms, or 39.4%) improvement.

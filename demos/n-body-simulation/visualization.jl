@@ -31,7 +31,7 @@ function build_scene(state; limit = 550, z_limit = 100)
 end
 
 
-function visualize(; n = 400, sim_speed = 10.0, steps_per_frame = 10)
+function visualize(; n = 1000, sim_speed = 10.0, steps_per_frame = 10)
     state = rotating_disk(n)
     fig, points, speeds, center, stats = build_scene(state)
     screen = display(fig; framerate = 60.0) 
