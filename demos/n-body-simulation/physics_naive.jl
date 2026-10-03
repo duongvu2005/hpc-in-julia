@@ -14,7 +14,7 @@ function acceleration(pos, mass)
     dy = y' .- y
     dz = z' .- z
 
-    r = sqrt.(dx.^2 .+ dy.^2 .+ dz.^2 .+ SOFTENING^2)
+    r = sqrt.(dx.^2 .+ dy.^2 .+ dz.^2 .+ ϵ2)
 
     # calc force & acceleration
     F = G .* (mass' .* mass) ./ r.^2
@@ -57,7 +57,6 @@ end
 """Calculate the total energy."""
 function total_energy(state::State)
     N = length(state.mass)
-    ϵ2 = SOFTENING^2
 
     kinetic = 0.0
     potential = 0.0

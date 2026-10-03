@@ -13,7 +13,7 @@ function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
             x_j = SVector{D}(pos[j, k] for k in 1:D)
 
             x_ij = x_i - x_j
-            r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
+            r_ij = sqrt(sum(abs2, x_ij) + ϵ2)
 
             scaling = G / r_ij^3
             a_ij = -scaling * mass[j] .* x_ij
@@ -60,7 +60,6 @@ end
 """Calculate the total energy."""
 function total_energy(state::State)
     N = length(state.mass)
-    ϵ2 = SOFTENING^2
 
     kinetic = 0.0
     potential = 0.0

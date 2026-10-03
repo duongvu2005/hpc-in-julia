@@ -1,23 +1,25 @@
 include("initial_conditions.jl")
 using StaticArrays
 
+@inline function body_acceleration(pos, mass, i, ::Val{D}) where {D}
+    x_i = SVector{D}(pos[i, k] for k in 1:D)
+    a_i = SVector{D}(0.0 for _ in 1:D)
+    @inbounds @simd for j in eachindex(mass)
+        x_j = SVector{D}(pos[j, k] for k in 1:D)
+        x_ij = x_i - x_j
+        inv_r_ij = 1 / sqrt(sum(abs2, x_ij) + ϵ2)
+        a_i += -inv_r_ij^3 * mass[j] .* x_ij
+    end
+    return G * a_i
+end
+
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
-function acceleration!(kv_cache, pos, mass, ::Val{D}) where {D}
+function acceleration!(kv_cache, pos, mass, dim::Val{D}) where {D}
     N = length(mass)
-    ϵ2 = SOFTENING^2
     @inbounds for i in 1:N
-        x_i = SVector{D}(pos[i, k] for k in 1:D)
-        a_i = SVector{D}(0.0 for _ in 1:D)
-        @simd for j in 1:N
-            x_j = SVector{D}(pos[j, k] for k in 1:D)
-
-            x_ij = x_i - x_j
-            inv_r_ij = 1 / sqrt(sum(abs2, x_ij) + ϵ2)
-
-            a_i += -inv_r_ij^3 * mass[j] .* x_ij
-        end
+        a_i = body_acceleration(pos, mass, i, dim)
         for k in 1:D
-            kv_cache[i, k] = G * a_i[k]
+            kv_cache[i, k] = a_i[k]
         end
     end
     return kv_cache
@@ -50,7 +52,6 @@ end
 """Calculate the total energy."""
 function total_energy(state::State)
     N = length(state.mass)
-    ϵ2 = SOFTENING^2
 
     kinetic = 0.0
     potential = 0.0

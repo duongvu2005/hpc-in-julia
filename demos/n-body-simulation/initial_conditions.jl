@@ -1,6 +1,6 @@
 # Initial conditions for N-body simulation
 const G = 1.0
-const SOFTENING = 1e-1
+const ϵ2 = 1e-2
 const D = 3
 
 struct RK4Cache
