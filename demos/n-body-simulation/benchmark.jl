@@ -21,7 +21,8 @@ end
 
 function benchmark_update(implementation, n)
     state = make_state(implementation, n)
-    return @benchmark $implementation.update!($state, $dt)
+    f = implementation.update!
+    return @benchmark $f($state, $dt)
 end
 
 function energy_drift(implementation, n; steps = 1000)
@@ -40,19 +41,11 @@ function main()
         @printf("%-20s %-20.3e\n", name, energy_drift(implementation, 100))
     end
 
-    println("\n--- update! (median) ---")
-    @printf("%-6s %-20s %-12s %-12s %-12s %-8s\n", "n", "implementation", "time", "memory", "allocs", "speedup")
-    for n in (50, 100, 200, 400)
-        base = nothing
-        for (name, implementation) in IMPLEMENTATIONS
-            trial = benchmark_update(implementation, n)
-            t = median(trial).time
-            base === nothing && (base = t)
-            @printf("%-6d %-20s %-12s %-12s %-12d %-8.2f\n", n, name,
-                    BenchmarkTools.prettytime(t), BenchmarkTools.prettymemory(trial.memory),
-                    trial.allocs, base / t)
-        end
-    end
+    println("\n--- update! (n = 100) ---")
+    b_naive = benchmark_update(Naive, 100)
+    b_optimized = benchmark_update(Optimized, 100)
+    display(b_naive)
+    display(b_optimized)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
