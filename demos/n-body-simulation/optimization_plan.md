@@ -119,4 +119,5 @@ Doing so, we got a 0.145ms improvement (from 1.080ms to 0.935ms, or 13.5% improv
 ## Vectorization
 
 As a baseline, adding `@simd` in our `j` loop gives us a 0.09ms improvement (from 0.935ms to 0.845ms,
-or 9.5% improvement).
+or 9.5% improvement). With `@turbo` the time was 0.884ms which is worse than `@simd` for whatever
+reason so I don't think it's worth messing our code over that.

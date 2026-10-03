@@ -3,10 +3,10 @@ using GLMakie
 include("physics.jl")
 
 # Positions of the light bodies (body 1 is the central mass, drawn separately)
-body_points(state) = [Point3f(state.pos[i, 1], state.pos[i, 2], state.pos[i, 3])
+body_points(state) = [Point3f(state.pos[1, i], state.pos[2, i], state.pos[3, i])
                       for i in 2:length(state.mass)]
-central_point(state) = [Point3f(state.pos[1, 1], state.pos[1, 2], state.pos[1, 3])]
-body_speeds(state) = vec(sqrt.(sum(abs2, state.vel[2:end, :], dims = 2)))
+central_point(state) = [Point3f(state.pos[1, 1], state.pos[2, 1], state.pos[3, 1])]
+body_speeds(state) = vec(sqrt.(sum(abs2, state.vel[2:end, :], dims = 1)))
 
 function build_scene(state; limit = 550, z_limit = 100)
     points = Observable(body_points(state))
