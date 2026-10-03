@@ -128,6 +128,8 @@ even better, we will bring back the full `1:N` `i` and `j` loops.
 
 ## Vectorization and Multithreading
 
+### Full double loops for better simd performance
+
 Motivated by the section above, we reinstate the `1:N` loop for both. The acceleration function is now
 
 ```julia
@@ -157,6 +159,8 @@ end
 In fact, after doing this, we gain a massive boost in performance. The median time dropped by a massive
 0.333ms (from 0.845ms to 0.512ms, or 39.4%) improvement.
 
+### Swap to NxD for better simd performance
+
 We will also swap back to the `NxD` instead of the `DxN` we proposed above. Using `DxN` as above optmizes
 individual calculations such as
 
@@ -177,3 +181,20 @@ of the 8 bodies to be in contiguous blocks. Doing so won't affect the performanc
 
 Doing so, the performance improved for another 0.297ms (from 0.512ms to 0.215ms, or 58% improvement). With this,
 we can comfortably run a simulation with `N=1000` at 75fps now.
+
+### Remove unnecessary acceleration cache
+
+When we're calculating the acceleration,
+
+```julia
+cache.k1v .= acceleration!(cache.tmp_acc, state.pos, state.mass, dim)
+```
+
+we're writing the acceleration to the `tmp_acc` cache, and then copying that over to our `k1v` cache. Thus,
+we don't really need the `tmp_acc` cache at all, and we can simply do
+
+```julia
+acceleration!(cache.k1v, state.pos, state.mass, dim)
+```
+
+### Multi-threading

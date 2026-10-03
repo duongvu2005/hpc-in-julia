@@ -2,7 +2,7 @@ include("initial_conditions.jl")
 using StaticArrays
 
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
-function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
+function acceleration!(kv_cache, pos, mass, ::Val{D}) where {D}
     N = length(mass)
     ϵ2 = SOFTENING^2
     @inbounds for i in 1:N
@@ -17,10 +17,10 @@ function acceleration!(tmp_acc, pos, mass, ::Val{D}) where {D}
             a_i += -inv_r_ij^3 * mass[j] .* x_ij
         end
         for k in 1:D
-            tmp_acc[i, k] = G * a_i[k]
+            kv_cache[i, k] = G * a_i[k]
         end
     end
-    return tmp_acc
+    return kv_cache
 end
 
 """Advance the state by one RK4 step of size dt."""
@@ -29,19 +29,19 @@ function update!(state::State, dt)
     dim = Val(D)
     # RK4
     cache.k1x .= state.vel
-    cache.k1v .= acceleration!(cache.tmp_acc, state.pos, state.mass, dim)
+    acceleration!(cache.k1v, state.pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k1x
     cache.k2x .= state.vel .+ 0.5 .* dt .* cache.k1v
-    cache.k2v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass, dim)
+    acceleration!(cache.k2v, cache.tmp_pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k2x
     cache.k3x .= state.vel .+ 0.5 .* dt .* cache.k2v
-    cache.k3v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass, dim)
+    acceleration!(cache.k3v, cache.tmp_pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ dt .* cache.k3x
     cache.k4x .= state.vel .+ dt .* cache.k3v
-    cache.k4v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass, dim)
+    acceleration!(cache.k4v, cache.tmp_pos, state.mass, dim)
 
     state.pos .+= (dt/6) .* (cache.k1x .+ 2 .* cache.k2x .+ 2 .* cache.k3x .+ cache.k4x)
     state.vel .+= (dt/6) .* (cache.k1v .+ 2 .* cache.k2v .+ 2 .* cache.k3v .+ cache.k4v)
