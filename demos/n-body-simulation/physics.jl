@@ -4,23 +4,30 @@ using StaticArrays
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
 function acceleration!(tmp_acc, pos, mass)
     D, N = size(pos)
-    for i in 1:N
+    tmp_acc .= 0
+    @inbounds for i in 1:N
         x_i = @SVector [pos[k, i] for k in 1:3]
         a_i = @SVector [0.0, 0.0, 0.0]
-        for j in 1:N
-            if i == j
-                continue
-            end
+        m_i = mass[i]
+        for j in i+1:N
             x_j = @SVector [pos[k, j] for k in 1:3]
 
             x_ij = x_i - x_j
             r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
 
-            a_ij = (-G * mass[j] / r_ij^3) .* x_ij
-            a_i = a_i .+ a_ij
+            scaling = G / r_ij^3
+            a_ij = -scaling * mass[j] .* x_ij
+            a_ji = scaling * m_i .* x_ij
+
+            a_i += a_ij
+            for k in 1:D
+            # tmp_acc will store the acc of j due to all particles w/ index < j
+                tmp_acc[k, j] += a_ji[k]
+            end
         end
         for k in 1:D
-            tmp_acc[k, i] = a_i[k]
+            # adding the contribution from particles w/ index > i
+            tmp_acc[k, i] += a_i[k]
         end
     end
     return tmp_acc

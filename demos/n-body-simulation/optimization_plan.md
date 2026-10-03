@@ -1,5 +1,9 @@
 # Optimizing the N-body simulation
 
+Original median time to compute an update with `n = 400` particles before any optimization
+is roughly 5.730ms. We will try to push this number to as low as possible until the point
+where we can comfortably simulate `10_000` particles.
+
 ## Heap Allocations
 
 Heap allocation -> Garbage collection during the simulation, which slows it down.
@@ -94,3 +98,18 @@ performance for like 0.087ms (from 1.496ms to 1.409ms, or 5.8%).
 ### Inbound checks
 
 We don't need to check that our indices are in bound here, so we can add `@inbounds` to our loop.
+
+### Newton's 3rd law
+
+We only need to compute half of the `N x N` matrix, so the inner loop can go from `i+1:N` instead.
+
+---
+
+Doing both of these optimizations, the performance improved for about 0.329ms (from 1.409ms to 1.080ms,
+or 23.3%).
+
+## Static type
+
+We declare the dimension D using a value type so the compiler have access to the number of dimension at
+compile time and can use this information to optimize our code (also, we won't have to hard-code the
+number of dimension into our code, which is nice).
