@@ -3,22 +3,22 @@ using StaticArrays
 
 """Gravitational acceleration of every body (with softening). Returns an N x 3 matrix."""
 function acceleration!(tmp_acc, pos, mass)
-    N, D = size(pos)
+    D, N = size(pos)
     tmp_acc .= 0.0
     for i in 1:N
-        x_i = @SVector [pos[i, k] for k in 1:3]
+        x_i = @SVector [pos[k, i] for k in 1:3]
         for j in 1:N
             if i == j
                 continue
             end
-            x_j = @SVector [pos[j, k] for k in 1:3]
+            x_j = @SVector [pos[k, j] for k in 1:3]
 
             x_ij = x_i - x_j
             r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
 
             a_ij = (-G * mass[j] / r_ij^3) .* x_ij
             for k in 1:D
-                tmp_acc[i, k] += a_ij[k]
+                tmp_acc[k, i] += a_ij[k]
             end
         end
     end
@@ -50,13 +50,13 @@ end
 
 """Calculate the total energy."""
 function total_energy(state::State)
-    kinetic = 0.5 * sum(state.mass .* (sum(abs2, state.vel, dims=2)))
+    kinetic = 0.5 * sum(state.mass .* (vec(sum(abs2, state.vel, dims=1))))
 
     N = length(state.mass)
     
-    x = state.pos[:, 1]
-    y = state.pos[:, 2]
-    z = state.pos[:, 3]
+    x = state.pos[1, :]
+    y = state.pos[2, :]
+    z = state.pos[3, :]
 
     dx = x' .- x
     dy = y' .- y

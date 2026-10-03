@@ -5,9 +5,9 @@ function acceleration(pos, mass)
     N = length(mass)
 
     # calc distance
-    x = pos[:, 1]
-    y = pos[:, 2]
-    z = pos[:, 3]
+    x = pos[1, :]
+    y = pos[2, :]
+    z = pos[3, :]
 
     dx = x' .- x
     dy = y' .- y
@@ -26,11 +26,11 @@ function acceleration(pos, mass)
     Fy = F .* dy ./ r
     Fz = F .* dz ./ r
 
-    Fx = sum(Fx, dims=2)
-    Fy = sum(Fy, dims=2)
-    Fz = sum(Fz, dims=2)
+    Fx = vec(sum(Fx, dims=2))
+    Fy = vec(sum(Fy, dims=2))
+    Fz = vec(sum(Fz, dims=2))
 
-    a = hcat(Fx, Fy, Fz) ./ mass
+    a = [Fx'; Fy'; Fz'] ./ mass'
     return a
 end
 
@@ -55,13 +55,13 @@ end
 
 """Calculate the total energy."""
 function total_energy(state::State)
-    kinetic = 0.5 * sum(state.mass .* (sum(abs2, state.vel, dims=2)))
+    kinetic = 0.5 * sum(state.mass .* (vec(sum(abs2, state.vel, dims=1))))
 
     N = length(state.mass)
     
-    x = state.pos[:, 1]
-    y = state.pos[:, 2]
-    z = state.pos[:, 3]
+    x = state.pos[1, :]
+    y = state.pos[2, :]
+    z = state.pos[3, :]
 
     dx = x' .- x
     dy = y' .- y

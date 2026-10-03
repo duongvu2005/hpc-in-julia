@@ -1,0 +1,86 @@
+# Optimizing the N-body simulation
+
+## Heap Allocations
+
+Heap allocation -> Garbage collection during the simulation, which slows it down.
+Plan: initialize the arrays and fill in the values instead (preallocation).
+
+We will use the modified State with the cache appended.
+
+```julia
+struct RK4Cache
+    k1x::Matrix{Float64}; k1v::Matrix{Float64}
+    k2x::Matrix{Float64}; k2v::Matrix{Float64}
+    k3x::Matrix{Float64}; k3v::Matrix{Float64}
+    k4x::Matrix{Float64}; k4v::Matrix{Float64}
+    tmp_pos::Matrix{Float64}
+    tmp_acc::Matrix{Float64}
+end
+```
+
+Using this, the RK4 function turns into something like following
+
+```julia
+function update!(state::State, dt)
+    cache = state.cache
+    # RK4
+    cache.k1x .= state.vel
+    cache.k1v .= acceleration!(cache.tmp_acc, state.pos, state.mass)
+
+    cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k1x
+    cache.k2x .= state.vel .+ 0.5 .* dt .* cache.k1v
+    cache.k2v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass)
+
+    cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k2x
+    cache.k3x .= state.vel .+ 0.5 .* dt .* cache.k2v
+    cache.k3v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass)
+
+    cache.tmp_pos .= state.pos .+ dt .* cache.k3x
+    cache.k4x .= state.vel .+ dt .* cache.k3v
+    cache.k4v .= acceleration!(cache.tmp_acc, cache.tmp_pos, state.mass)
+
+    state.pos .+= (dt/6) .* (cache.k1x .+ 2 .* cache.k2x .+ 2 .* cache.k3x .+ cache.k4x)
+    state.vel .+= (dt/6) .* (cache.k1v .+ 2 .* cache.k2v .+ 2 .* cache.k3v .+ cache.k4v)
+end
+```
+
+and the acceleration function turns into this
+
+```julia
+function acceleration!(tmp_acc, pos, mass)
+    N, D = size(pos)
+    tmp_acc .= 0.0
+    for i in 1:N
+        x_i = @SVector [pos[i, k] for k in 1:3]
+        for j in 1:N
+            if i == j
+                continue
+            end
+            x_j = @SVector [pos[j, k] for k in 1:3]
+
+            x_ij = x_i - x_j
+            r_ij = sqrt(sum(abs2, x_ij) + SOFTENING^2)
+
+            a_ij = (-G * mass[j] / r_ij^3) .* x_ij
+            for k in 1:D
+                tmp_acc[i, k] += a_ij[k]
+            end
+        end
+    end
+    return tmp_acc
+end
+```
+
+At this point, we have successfully removed all heap allocations.
+
+## Row major vs Column major
+
+Julia is column major, so maybe changing the matrices to be 3xN instead of Nx3 will speed
+up the code a little bit (see [row major vs column major](../cpu-architecture/matrix_sum_results.txt))
+
+## Redundant computations
+
+A few things to note
+
+- First, we don't need to run the full NxN calculation (Newton's 3rd law)
+-
