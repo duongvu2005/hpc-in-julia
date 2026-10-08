@@ -8,7 +8,7 @@ body_points(state) = [Point3f(state.pos[i, 1], state.pos[i, 2], state.pos[i, 3])
 central_point(state) = [Point3f(state.pos[1, 1], state.pos[1, 2], state.pos[1, 3])]
 body_speeds(state) = vec(sqrt.(sum(abs2, state.vel[2:end, :], dims = 2)))
 
-function build_scene(state; limit = 550, z_limit = 100)
+function build_scene(state; limit = 1250, z_limit = 200)
     points = Observable(body_points(state))
     speeds = Observable(body_speeds(state))
     center = Observable(central_point(state))
@@ -31,7 +31,7 @@ function build_scene(state; limit = 550, z_limit = 100)
 end
 
 
-function visualize(; n = 1000, sim_speed = 10.0, steps_per_frame = 10)
+function visualize(; n = 10000, sim_speed = 10.0, steps_per_frame = 3)
     state = rotating_disk(n)
     fig, points, speeds, center, stats = build_scene(state)
     screen = display(fig; framerate = 60.0) 
@@ -43,7 +43,7 @@ function visualize(; n = 1000, sim_speed = 10.0, steps_per_frame = 10)
         frame_time = (now - last) / 1e9
         last = now
 
-        sub_dt = sim_speed * frame_time / steps_per_frame
+        sub_dt = FT(sim_speed * frame_time / steps_per_frame)
         for _ in 1:steps_per_frame
             update!(state, sub_dt)
         end

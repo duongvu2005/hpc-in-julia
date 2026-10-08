@@ -1,21 +1,23 @@
 # Initial conditions for N-body simulation
-const G = 1.0
-const ϵ2 = 1e-2
+const FT = Float32
+const G = FT(1.0)
+const ϵ2 = FT(1)
 const D = 3
+const dt = FT(0.01)
 
 struct RK4Cache
-    k1x::Matrix{Float64}; k1v::Matrix{Float64}
-    k2x::Matrix{Float64}; k2v::Matrix{Float64}
-    k3x::Matrix{Float64}; k3v::Matrix{Float64}
-    k4x::Matrix{Float64}; k4v::Matrix{Float64}
-    tmp_pos::Matrix{Float64}
-    tmp_acc::Matrix{Float64}
+    k1x::Matrix{FT}; k1v::Matrix{FT}
+    k2x::Matrix{FT}; k2v::Matrix{FT}
+    k3x::Matrix{FT}; k3v::Matrix{FT}
+    k4x::Matrix{FT}; k4v::Matrix{FT}
+    tmp_pos::Matrix{FT}
+    tmp_acc::Matrix{FT}
 end
 
 mutable struct State
-    pos::Matrix{Float64}    # N x D
-    vel::Matrix{Float64}    # N x D
-    mass::Vector{Float64}   # N
+    pos::Matrix{FT}    # N x D
+    vel::Matrix{FT}    # N x D
+    mass::Vector{FT}   # N
     cache::RK4Cache
 end
 
@@ -23,7 +25,7 @@ end
 One heavy body at the origin plus `n - 1` light bodies on roughly circular
 orbits in the xy-plane. Returns a `State`.
 """
-function rotating_disk(n; central_mass = 10000.0, inner_radius = 50.0, outer_radius = 500.0, thickness = 20.0)
+function rotating_disk(n; central_mass = 100000.0, inner_radius = 100.0, outer_radius = 1000.0, thickness = 20.0)
     pos = zeros(n, 3)
     vel = zeros(n, 3)
     mass = ones(n)

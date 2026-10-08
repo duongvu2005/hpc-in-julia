@@ -1,9 +1,9 @@
 include("initial_conditions.jl")
 using StaticArrays
 
-@inline function body_acceleration(pos, mass, i, ::Val{D}) where {D}
+@inline function body_acceleration(pos::AbstractMatrix{T}, mass, i, ::Val{D}) where {T, D}
     x_i = SVector{D}(pos[i, k] for k in 1:D)
-    a_i = SVector{D}(0.0 for _ in 1:D)
+    a_i = zero(SVector{D, T})
     @inbounds @simd for j in eachindex(mass)
         x_j = SVector{D}(pos[j, k] for k in 1:D)
         x_ij = x_i - x_j
@@ -33,12 +33,12 @@ function update!(state::State, dt)
     cache.k1x .= state.vel
     acceleration!(cache.k1v, state.pos, state.mass, dim)
 
-    cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k1x
-    cache.k2x .= state.vel .+ 0.5 .* dt .* cache.k1v
+    cache.tmp_pos .= state.pos .+ (dt/2) .* cache.k1x
+    cache.k2x .= state.vel .+ (dt/2) .* cache.k1v
     acceleration!(cache.k2v, cache.tmp_pos, state.mass, dim)
 
-    cache.tmp_pos .= state.pos .+ 0.5 .* dt .* cache.k2x
-    cache.k3x .= state.vel .+ 0.5 .* dt .* cache.k2v
+    cache.tmp_pos .= state.pos .+ (dt/2) .* cache.k2x
+    cache.k3x .= state.vel .+ (dt/2) .* cache.k2v
     acceleration!(cache.k3v, cache.tmp_pos, state.mass, dim)
 
     cache.tmp_pos .= state.pos .+ dt .* cache.k3x
